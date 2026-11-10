@@ -212,9 +212,11 @@ Web Service 通过 Sensor Client 获取传感器数据，并提供以下 HTTP �
 例如，Web Service 需要调用 Camera Service 和 Sensor Service 提供的接口，因此应在这两个服务完成必要初始化后启动。
 服务之间的依赖关系可以抽象为有向图，其中每个节点代表一个服务，有向边表示服务之间的依赖关系。
 
+```
 Camera Service ──┐
                  ├──> Web Service
 Sensor Service ──┘
+```
 
 Service Manager 根据依赖图进行拓扑排序，确定服务启动顺序，并检测是否存在循环依赖。
 如果存在循环依赖，则无法得到有效的启动顺序，应当拒绝该服务配置并输出错误信息。
@@ -233,6 +235,7 @@ Service Manager 负责维护服务的运行状态，并协调服务启动、运�
 当服务超过规定时间未发送心跳时，Service Manager 将其视为异常服务，并尝试执行恢复操作。
 典型恢复流程如下：
 
+```
 服务正常运行
       │
       ▼
@@ -257,6 +260,7 @@ Service Manager 检查心跳
       │
       ▼
 恢复心跳监测
+```
 
 通过将故障检测和恢复逻辑集中到 Service Manager，各业务服务无需分别实现完整的进程监管功能。
 

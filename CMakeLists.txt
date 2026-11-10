@@ -90,15 +90,32 @@ target_link_libraries(sensor_ctl PRIVATE ipc_utils)
 
 
 set(BOARD_HOME /home/rance/linux/nfs/rootfs/home/menoa/program)
+set(APP_DIR smart_gateway)
 add_custom_target(send
-                DEPENDS ${APP} camera_service camera_ctl
+                DEPENDS ${APP}
+
+                COMMAND sudo mkdir -p 
+                        ${BOARD_HOME}/${APP_DIR}/
+
                 COMMAND sudo cp $<TARGET_FILE:${APP}>
-                        ${BOARD_HOME}/
+                        ${BOARD_HOME}/${APP_DIR}/
+
+                COMMAND sudo cp
+                    ${PROJECT_SOURCE_DIR}/init.sh
+                    ${BOARD_HOME}/${APP_DIR}/
+
+                COMMAND sudo cp
+                    ${PROJECT_SOURCE_DIR}/start.sh
+                    ${BOARD_HOME}/${APP_DIR}/
+
+                COMMAND sudo cp -r
+                    ${PROJECT_SOURCE_DIR}/web
+                    ${BOARD_HOME}/${APP_DIR}/
                 # COMMAND sudo cp $<TARGET_FILE:camera_ctl>
                 #         ${BOARD_HOME}/
                 # COMMAND sudo cp $<TARGET_FILE:camera_viewer>
                 #         ${BOARD_HOME}/
-                COMMAND sudo cp $<TARGET_FILE:sensor_ctl>
-                        ${BOARD_HOME}/
+                # COMMAND sudo cp $<TARGET_FILE:sensor_ctl>
+                #         ${BOARD_HOME}/
                 COMMENT "Copying programs to board"
                 )
