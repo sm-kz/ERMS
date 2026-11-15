@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(smart_gateway VERSION 1.0.0 LANGUAGES C)
+project(erms VERSION 1.0.0 LANGUAGES C)
 set(CMAKE_BUILD_TYPE Debug)
 
 configure_file(
@@ -13,7 +13,7 @@ file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.c")
 file(GLOB SERVICES "${PROJECT_SOURCE_DIR}/services/*.c")
 file(GLOB MODULES "${PROJECT_SOURCE_DIR}/modules/*.c")
 
-set(APP smart_gateway)
+set(APP erms)
 set(USR_LIBS /usr/local/lib)
 
 add_executable(${APP} ${SOURCES} ${SERVICES} ${MODULES})
@@ -103,42 +103,42 @@ ExternalProject_Add(ota_infogen
 
 # 自定义指令
 set(OTA_STAGE ${PROJECT_SOURCE_DIR}/ota_stage)
-set(OTA_PACKAGE ${PROJECT_SOURCE_DIR}/smart_gateway.tar.gz)
+set(OTA_PACKAGE ${PROJECT_SOURCE_DIR}/erms.tar.gz)
 
 add_custom_target(
     package
     DEPENDS ${APP} ota_agent
 
     COMMAND rm -rf ${OTA_STAGE}
-    COMMAND mkdir -p ${OTA_STAGE}/smart_gateway
+    COMMAND mkdir -p ${OTA_STAGE}/erms
 
     COMMAND cp 
         $<TARGET_FILE:${APP}>
         $<TARGET_FILE:ota_agent>
-        ${OTA_STAGE}/smart_gateway/
+        ${OTA_STAGE}/erms/
 
     COMMAND cp
         ${PROJECT_SOURCE_DIR}/init.sh
         ${PROJECT_SOURCE_DIR}/start.sh
-        ${OTA_STAGE}/smart_gateway/
+        ${OTA_STAGE}/erms/
 
     COMMAND cp -r
         ${PROJECT_SOURCE_DIR}/web
-        ${OTA_STAGE}/smart_gateway/
+        ${OTA_STAGE}/erms/
 
     # 生成 tar.gz
     COMMAND tar -czf
         ${OTA_PACKAGE}
         -C ${OTA_STAGE}
-        smart_gateway
+        erms
 
     COMMAND rm -rf ${OTA_STAGE}
 
-    COMMENT "Packaging smart_gateway OTA update"
+    COMMENT "Packaging erms OTA update"
 )
 
 set(BOARD_HOME /home/rance/linux/nfs/rootfs/home/menoa/program)
-set(APP_DIR smart_gateway)
+set(APP_DIR erms)
 add_custom_target(
     send
     DEPENDS ${APP} ota_agent

@@ -7,7 +7,7 @@
 
 #include "service_manager.h"
 
-#define PID_FILE        "/var/run/smart_gateway.pid"
+#define PID_FILE        "/var/run/erms.pid"
 
 extern int camera_service(void *arg);
 extern int web_service(void *arg);

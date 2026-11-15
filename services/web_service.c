@@ -313,7 +313,7 @@ static int http_request_process() {
         } else {
             status_code = 200;
             strcpy(status_text, "OK");
-            strcpy(body, "Hello smart gateway");
+            strcpy(body, "Hello ERMS");
         }
         break;
 

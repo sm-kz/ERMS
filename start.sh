@@ -10,7 +10,7 @@ httpd_pid=""
 
 cleanup() {
     trap - TERM INT # 取消 SIGTERM、 SIGINT 的 trap
-    echo "[gateway] Stopping services"
+    echo "[erms] Stopping services"
 
     if [ -n "$httpd_pid" ]; then
         kill "$httpd_pid" 2>/dev/null || true
@@ -30,11 +30,11 @@ if [ -f "$APP_DIR/init.sh" ]; then
     "$APP_DIR/init.sh"
 fi
 
-echo "[gateway] Starting smart_gateway..."
-"$APP_DIR/smart_gateway" &
+echo "[erms] Starting erms..."
+"$APP_DIR/erms" &
 self_pid=$!
 
-echo "[gateway] Starting HTTP server..."
+echo "[erms] Starting HTTP server..."
 httpd -f -p 8000 -h "$WEB_DIR" &
 httpd_pid=$!
 

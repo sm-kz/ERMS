@@ -17,7 +17,7 @@
 #include "http_utils.h"
 #include "version.h"
 
-#define PID_FILE        "/var/run/smart_gateway.pid"
+#define PID_FILE        "/var/run/erms.pid"
 #define PROG_ENTRY      "./start.sh"
 
 char *file = NULL;
@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
     }
 
     // 用所有解压的新文件将旧文件覆盖
-    path_join(stage_dir, "smart_gateway/.");
+    path_join(stage_dir, "erms/.");
     if (run_shell_cmd(1, "cp", "-ar", stage_dir, cwd, NULL))
         goto cleanup;
     

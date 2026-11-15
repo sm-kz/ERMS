@@ -1,5 +1,5 @@
-# 介绍
-基于 i.MX6ULL 嵌入式 Linux 平台开发的智能网关项目，采用 C 语言及多进程架构，实现摄像头采集、视频推流、传感器数据采集、Web 交互以及服务进程管理等功能。
+# 嵌入式远程管理系统
+基于 i.MX6ULL 嵌入式 Linux 平台开发的远程原理系统（Embedded Remote Management System, ERMS），采用 C 语言及多进程架构，实现摄像头采集、视频推流、传感器数据采集、Web 交互以及服务进程管理等功能。
 
 ## 开发与运行环境
 #### 1. 硬件环境
@@ -33,7 +33,7 @@
 | jpeg | 10.0.0 |
 
 #### 4.运行脚本
-项目有可执行程序 smart_gateway，驱动，web 服务加载脚本 init.sh，以及一键启动脚本 start.sh。
+项目有可执行程序 erms，驱动，web 服务加载脚本 init.sh，以及一键启动脚本 start.sh。
 首先确保以下驱动已经加载，或着使用 modprobe 过：
 | 设备 | 驱动程序 |
 | :--- | :--- |
@@ -248,7 +248,7 @@ Service Manager 根据依赖图进行拓扑排序，确定服务启动顺序，�
 
 #### 4.3. 服务进程创建与生命周期管理
 系统使用 fork() 创建独立的服务进程。
-与通过 fork() 和 exec() 启动外部可执行文件的方式不同，本项目将各服务的入口函数编译到同一个 smart_gateway 可执行文件中。
+与通过 fork() 和 exec() 启动外部可执行文件的方式不同，本项目将各服务的入口函数编译到同一个 erms 可执行文件中。
 Service Manager 创建子进程后，由子进程执行对应的服务入口函数，从而实现不同业务模块在独立进程地址空间中运行。
 这种设计不需要为每个服务分别生成可执行文件，同时保留了多进程架构的故障隔离和资源独立性。
 Service Manager 负责维护服务的运行状态，并协调服务启动、运行、停止和重新启动等生命周期操作。
@@ -364,9 +364,9 @@ make -C build package
 
 打包后的结构如下：
 ```
-smart_gateway.tar.gz
-└── smart_gateway/
-    ├── smart_gateway
+erms.tar.gz
+└── erms/
+    ├── erms
     ├── ota_agent
     ├── init.sh
     ├── start.sh
@@ -376,15 +376,15 @@ smart_gateway.tar.gz
 #### 5.4. 版本描述文件
 版本描述文件通过 `ota_infogen` 工具进行生成，比如输入如下命令：
 ```shell
-bin/ota_infogen --package smart_gateway.tar.gz --version 1.0.0 --url "http://192.168.1.129:8000/smart_gateway.tar.gz" --output version.json
+bin/ota_infogen --package erms.tar.gz --version 1.0.0 --url "http://192.168.1.129:8000/erms.tar.gz" --output version.json
 ```
 
 生成的 version.json 结构如下：
 ```
 {
     "version": "1.0.0",
-    "filename": "smart_gateway.tar.gz",
-    "url": "http://192.168.0.129:8000/smart_gateway.tar.gz",
+    "filename": "erms.tar.gz",
+    "url": "http://192.168.0.129:8000/erms.tar.gz",
     "size": 1024000,
     "sha256": "<64-character SHA-256 digest>"
 }
@@ -416,7 +416,7 @@ make -C bulid package
 
 **3. 发布新版本**
 ```shell
-bin/ota_infogen --package smart_gateway.tar.gz --version 1.0.1 --url "http://192.168.1.129:8000/smart_gateway.tar.gz" --output version.json
+bin/ota_infogen --package erms.tar.gz --version 1.0.1 --url "http://192.168.1.129:8000/erms.tar.gz" --output version.json
 ```
 
 **4. 开发板执行更新程序**
