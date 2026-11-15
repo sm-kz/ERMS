@@ -75,11 +75,15 @@ int main(int argc, char **argv) {
         register_service(&services[i]);
     }
 
+    system_monitor_init();
     start_services();
 
-    while(!exit_requested);
+    while(!exit_requested) {
+        pause();
+    };
 
     stop_services();
+    system_monitor_close();
 
     fclose(fp);
     unlink(PID_FILE);
