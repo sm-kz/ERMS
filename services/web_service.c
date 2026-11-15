@@ -208,7 +208,7 @@ static int http_request_process() {
         return -1;    
     }
 
-    char request[4096];
+    char request[4096] = {0};
     ssize_t n = recv(client_fd, request, sizeof(request) - 1, 0);
     if (n <= 0) {
         close(client_fd);
@@ -366,9 +366,8 @@ static int http_request_process() {
         } else if (http_path_match(target, "/api/camera/streamoff")) {
             // 从请求体中获取需要关闭的流 socket
             char *id = NULL;
-            size_t id_size = 0;
-            if (http_get_request_body(request, &id, &id_size) < 0) {
-                fprintf(stderr, "[Web Service] Error: http_get_request_body\r\n");
+            if ((id = http_get_body(request)) == NULL) {
+                fprintf(stderr, "[Web Service] Error: http_get_body\r\n");
                 status_code = 400;
                 strcpy(status_text, "Bad Request");
                 goto send;

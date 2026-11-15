@@ -1,2 +1,8 @@
 build
 CMakeFiles
+
+# generated
+*.tar*
+version.json
+generated
+bin

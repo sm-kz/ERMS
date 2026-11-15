@@ -2,7 +2,7 @@
 基于 i.MX6ULL 嵌入式 Linux 平台开发的智能网关项目，采用 C 语言及多进程架构，实现摄像头采集、视频推流、传感器数据采集、Web 交互以及服务进程管理等功能。
 
 ## 开发与运行环境
-### 1. 硬件环境
+#### 1. 硬件环境
 | 硬件 | 型号 / 要求 | 用途 |
 | :--- | :--- | :--- |
 | 主控平台 | I.MX6ULL | 系统运行平台 |
@@ -11,7 +11,7 @@
 | 网络接口 | 以太网 | 本地 HTTP 通信 |
 | 陀螺仪传感器 | MPU6050 | 加速度、角速度采集及姿态解算 |
 
-### 2.软件环境
+#### 2.软件环境
 | 项目 | 开发环境 |
 | :--- | :--- |
 | 操作系统 | Linux |
@@ -19,6 +19,30 @@
 | 目标架构 | ARMv7-A |
 | 构建工具 | CMake 3.31.9 |
 | 交叉编译器 | Linaro GCC 4.9.4 |
+
+#### 3.第三方库
+**宿主机**
+| 库 | 版本 |
+| :--- | :--- |
+| openssl |0.29.2 |
+
+
+**开发板**
+| 项目 | 开发环境 |
+| :--- | :--- |
+| jpeg | 10.0.0 |
+
+#### 4.运行脚本
+项目有可执行程序 smart_gateway，驱动，web 服务加载脚本 init.sh，以及一键启动脚本 start.sh。
+首先确保以下驱动已经加载，或着使用 modprobe 过：
+| 设备 | 驱动程序 |
+| :--- | :--- |
+| CSI 接口 | mx6s_capture.ko |
+| 摄像头 | ov5640.ko |
+| 陀螺仪 | mpu6050.ko |
+
+开发板使用 httpd 开启 http 服务，用于传输 web 页面资源，需要确保开发板有 httpd 程序。
+
 
 # 技术说明
 ## 1. 视频服务系统架构与实现
@@ -279,3 +303,124 @@ Service Manager 在需要停止服务时，通过 SIGTERM 通知对应进程，�
 - 进程隔离：各服务在独立进程中运行，降低单个业务模块异常对其他模块的直接影响。
 - 故障自恢复：通过心跳检测与进程重启机制，提高系统持续运行能力。
 - 易于扩展：新增服务主要需要提供入口函数、服务描述信息及依赖关系，无需重新设计整个管理流程。
+
+## 5. OTA 程序更新
+基于 C 语言实现的轻量级 OTA（Over-The-Air）升级程序，用于嵌入式 Linux 设备的应用程序远程更新。
+
+#### 5.1. 功能特性
+- 远程版本检查：通过 HTTP 获取 version.json，与设备端编译版本进行比较。
+- 升级包下载：基于 POSIX Socket 实现 HTTP 客户端，从指定url下载。
+- 完整性校验：使用 SHA-256 验证升级包，防止损坏的文件被安装。
+- 临时目录解压：先将升级包解压至独立暂存目录，避免直接解压覆盖运行文件。
+- 应用程序更新：停止旧程序后，将新版本文件复制到应用目录。
+- 进程管理：通过 PID 文件定位主进程，发送 SIGTERM 请求退出，并在更新后重新启动程序。
+- 临时文件清理：升级结束后清理下载文件及解压目录。
+
+#### 5.2. OTA 工作流程
+```
+                  Start OTA Agent
+                         |
+                         v
+                Download version.json
+                         |
+                         v
+                 Compare versions
+                         |
+                +--------+--------+
+                |                 |
+             Same version     Different version
+                |                 |
+                v                 v
+               Exit        Download tar.gz
+                                  |
+                                  v
+                            Verify SHA-256
+                                  |
+                         +--------+--------+
+                         |                 |
+                       Failed            Passed
+                         |                 |
+                         v                 v
+                        Exit       Extract to staging
+                                           |
+                                           v
+                                   Stop old application
+                                           |
+                                           v
+                                    Replace files
+                                           |
+                                           v
+                                  Restart application
+                                           |
+                                           v
+                                    Clean up files
+```
+
+#### 5.3. 升级包结构
+执行如下命令进行程序打包:
+```shell
+make -C build package
+```
+
+打包后的结构如下：
+```
+smart_gateway.tar.gz
+└── smart_gateway/
+    ├── smart_gateway
+    ├── ota_agent
+    ├── init.sh
+    ├── start.sh
+    └── web/
+```
+
+#### 5.4. 版本描述文件
+版本描述文件通过 `ota_infogen` 工具进行生成，比如输入如下命令：
+```shell
+bin/ota_infogen --package smart_gateway.tar.gz --version 1.0.0 --url "http://192.168.1.129:8000/smart_gateway.tar.gz" --output version.json
+```
+
+生成的 version.json 结构如下：
+```
+{
+    "version": "1.0.0",
+    "filename": "smart_gateway.tar.gz",
+    "url": "http://192.168.0.129:8000/smart_gateway.tar.gz",
+    "size": 1024000,
+    "sha256": "<64-character SHA-256 digest>"
+}
+```
+
+#### 5.5. 部署与使用
+###### 5.5.1 宿主机作为 HTTP 服务器
+首先需要确保打包好的文件和 version.json 在同一个目录下，然后开启 HTTP 服务：
+```shell
+python3 -m http.server 8000 --bind 0.0.0.0
+```
+
+###### 5.5.2 设备端执行升级
+在开发板的应用程序目录中执行：
+```shell
+./ota_agent --url http://192.168.0.129:8000/version.json
+```
+
+###### 5.5.3 新版本部署和升级示例
+**1. 编译程序**
+```shell
+cmake --build build
+```
+
+**2. 打包程序**
+```shell
+make -C bulid package
+```
+
+**3. 发布新版本**
+```shell
+bin/ota_infogen --package smart_gateway.tar.gz --version 1.0.1 --url "http://192.168.1.129:8000/smart_gateway.tar.gz" --output version.json
+```
+
+**4. 开发板执行更新程序**
+执行前需要确保宿主机开启了 http 服务，参考 5.5.1
+```shell
+./ota_agent --url http://192.168.0.129:8000/version.json
+```

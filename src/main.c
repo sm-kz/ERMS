@@ -7,6 +7,8 @@
 
 #include "service_manager.h"
 
+#define PID_FILE        "/var/run/smart_gateway.pid"
+
 extern int camera_service(void *arg);
 extern int web_service(void *arg);
 extern int sensor_service(void *arg);
@@ -28,6 +30,17 @@ int main(int argc, char **argv) {
     sa.sa_handler = sigterm_handler;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGTERM, &sa, NULL);
+
+    /* 记录进程 pid */
+    FILE *fp = fopen(PID_FILE, "w");
+    if (!fp) {
+        perror("fopen");
+        return -1;
+    }
+
+    pid_t pid = getpid();
+    fwrite(&pid, sizeof(pid), 1, fp);
+    fflush(fp);
 
     struct service_struct services[] = {
         {
@@ -67,6 +80,9 @@ int main(int argc, char **argv) {
     while(!exit_requested);
 
     stop_services();
+
+    fclose(fp);
+    unlink(PID_FILE);
 
     return 0;
 }

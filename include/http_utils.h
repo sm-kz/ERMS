@@ -12,11 +12,11 @@ enum req_method {
 enum req_method http_get_request_method(const char *request);
 size_t http_get_request_target(const char *request, char **target, size_t *len);
 int http_path_match(const char *target, const char *path);
-int http_get_request_body(const char *request, char **body, size_t *size);
+char *http_get_body(const char *buf);
 ssize_t http_send_response(int fd,
                            const int status_code,
                            const char *status_text,
                            const char *content_type,
                            const char *body);
-                           
+int http_download(char *ip, int port, char *file, char *save);
 #endif

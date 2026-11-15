@@ -38,4 +38,4 @@ echo "[gateway] Starting HTTP server..."
 httpd -f -p 8000 -h "$WEB_DIR" &
 httpd_pid=$!
 
-wait "$gateway_pid"
+wait "$self_pid"
