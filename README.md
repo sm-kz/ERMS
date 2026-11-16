@@ -30,6 +30,7 @@
 **开发板**
 | 项目 | 开发环境 |
 | :--- | :--- |
+| openssl | 1.1.1 |
 | jpeg | 10.0.0 |
 
 #### 4.运行脚本
@@ -79,7 +80,8 @@ Web Service 基于 Linux TCP Socket 实现轻量级 HTTP 服务器，负责接�
 | GET | /api/camera/status | 查询摄像头运行状态、分辨率、像素格式及帧率 |
 | POST | /api/camera/start | 启动摄像头采集 |
 | POST | /api/camera/stop | 停止摄像头采集 |
-| GET | /api/camera/stream | 建立 MJPEG 视频流连接 |
+| GET | /api/camera/streamon | 建立 MJPEG 视频流连接 |
+| POST | /api/camera/streamoff | 取消 MJPEG 视频流连接 |
 
 普通控制请求采用 JSON 格式返回处理结果；视频流请求则保持 HTTP 连接，通过持续发送图像帧实现实时预览。
 
@@ -304,10 +306,28 @@ Service Manager 在需要停止服务时，通过 SIGTERM 通知对应进程，�
 - 故障自恢复：通过心跳检测与进程重启机制，提高系统持续运行能力。
 - 易于扩展：新增服务主要需要提供入口函数、服务描述信息及依赖关系，无需重新设计整个管理流程。
 
-## 5. OTA 程序更新
+## 5. 系统状态监控
+有时候需要能够了解到机器的运行状态，设计本模块目的就是为了可以实时获取系统运行状态，包括 CPU 使用率、内存使用率以及系统启动时间。
+
+#### 5.1 系统状态监测架构
+CPU 使用率可以从 /proc/stat 中读取，并通过计算得到。该文件保存了 CPU 的用户时间、系统时间、空闲时间等，总的 CPU 时间就是各项相加的结果。
+总空闲时间是 idle + iowait。那么 CPU 瞬时利用率就等于：一段时间内总的空闲时间 / 该段时长。因为需要两个时间点的数据，为了避免 api 中引入
+睡眠，专门开启一个新的线程周期性地计算，结果存在变量里，对外接口仅返回该变量。
+
+内存使用率可以从 /proc/meminfo 中获取，计算公式为：MemAvailable / MemTotal。
+
+系统启动时间可以从 /proc/uptime 中获取。
+
+#### 5.2 web 数据展示
+web service 提供了一个 api 接口，用于获取系统状态，传输的数据为 json 格式，包含 cpu_usage、 mem_usage 和 uptime 三个字段。
+| 请求方式 | 接口 | 功能 |
+| :--- | :--- | :--- |
+| GET | /api/system/state | 获取系统运行状态 |
+
+## 6. OTA 程序更新
 基于 C 语言实现的轻量级 OTA（Over-The-Air）升级程序，用于嵌入式 Linux 设备的应用程序远程更新。
 
-#### 5.1. 功能特性
+#### 6.1. 功能特性
 - 远程版本检查：通过 HTTP 获取 version.json，与设备端编译版本进行比较。
 - 升级包下载：基于 POSIX Socket 实现 HTTP 客户端，从指定url下载。
 - 完整性校验：使用 SHA-256 验证升级包，防止损坏的文件被安装。
@@ -316,7 +336,7 @@ Service Manager 在需要停止服务时，通过 SIGTERM 通知对应进程，�
 - 进程管理：通过 PID 文件定位主进程，发送 SIGTERM 请求退出，并在更新后重新启动程序。
 - 临时文件清理：升级结束后清理下载文件及解压目录。
 
-#### 5.2. OTA 工作流程
+#### 6.2. OTA 工作流程
 ```
                   Start OTA Agent
                          |
@@ -356,7 +376,7 @@ Service Manager 在需要停止服务时，通过 SIGTERM 通知对应进程，�
                                     Clean up files
 ```
 
-#### 5.3. 升级包结构
+#### 6.3. 升级包结构
 执行如下命令进行程序打包:
 ```shell
 make -C build package
@@ -373,7 +393,7 @@ erms.tar.gz
     └── web/
 ```
 
-#### 5.4. 版本描述文件
+#### 6.4. 版本描述文件
 版本描述文件通过 `ota_infogen` 工具进行生成，比如输入如下命令：
 ```shell
 bin/ota_infogen --package erms.tar.gz --version 1.0.0 --url "http://192.168.1.129:8000/erms.tar.gz" --output version.json
@@ -390,20 +410,20 @@ bin/ota_infogen --package erms.tar.gz --version 1.0.0 --url "http://192.168.1.12
 }
 ```
 
-#### 5.5. 部署与使用
-###### 5.5.1 宿主机作为 HTTP 服务器
+#### 6.5. 部署与使用
+###### 6.5.1 宿主机作为 HTTP 服务器
 首先需要确保打包好的文件和 version.json 在同一个目录下，然后开启 HTTP 服务：
 ```shell
 python3 -m http.server 8000 --bind 0.0.0.0
 ```
 
-###### 5.5.2 设备端执行升级
+###### 6.5.2 设备端执行升级
 在开发板的应用程序目录中执行：
 ```shell
 ./ota_agent --url http://192.168.0.129:8000/version.json
 ```
 
-###### 5.5.3 新版本部署和升级示例
+###### 6.5.3 新版本部署和升级示例
 **1. 编译程序**
 ```shell
 cmake --build build
